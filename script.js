@@ -1,6 +1,6 @@
 const API_KEY = "1eca71e3778b478ab180bfaf008e6944";
 
-function addMessage(message, sender) {
+function addMessage(message, sender, save = true) {
     const chatBox = document.getElementById("chat-box");
 
     const div = document.createElement("div");
@@ -10,26 +10,53 @@ function addMessage(message, sender) {
     chatBox.appendChild(div);
     chatBox.scrollTop = chatBox.scrollHeight;
 
+    if (save) {
+        saveMessage(message, sender);
+    }
+
     return div;
 }
 
-function createRecommendation(temp, weather) {
+function saveMessage(message, sender) {
+    const history = JSON.parse(localStorage.getItem("chatHistory")) || [];
 
+    history.push({
+        message: message,
+        sender: sender
+    });
+
+    localStorage.setItem("chatHistory", JSON.stringify(history));
+}
+
+function loadMessages() {
+    const history = JSON.parse(localStorage.getItem("chatHistory")) || [];
+
+    history.forEach(item => {
+        addMessage(item.message, item.sender, false);
+    });
+}
+
+function clearChat() {
+    localStorage.removeItem("chatHistory");
+
+    const chatBox = document.getElementById("chat-box");
+    chatBox.innerHTML = "";
+
+    addMessage("Cześć! Podaj pogodę lub nazwę miasta.", "bot-message");
+}
+
+function createRecommendation(temp, weather) {
     let recommendation = "";
 
     if (temp <= 0) {
         recommendation += "🥶 Załóż zimową kurtkę, czapkę, szalik, rękawiczki i ciepłe buty. ";
-    }
-    else if (temp < 10) {
+    } else if (temp < 10) {
         recommendation += "🧥 Załóż ciepłą kurtkę, długie spodnie i pełne buty. ";
-    }
-    else if (temp < 18) {
+    } else if (temp < 18) {
         recommendation += "👕 Wybierz bluzę lub lekką kurtkę. ";
-    }
-    else if (temp < 25) {
+    } else if (temp < 25) {
         recommendation += "😎 Wystarczy lekka bluza albo koszulka z długim rękawem. ";
-    }
-    else {
+    } else {
         recommendation += "☀️ Załóż lekką koszulkę, krótkie spodenki i pij dużo wody. ";
     }
 
@@ -45,50 +72,31 @@ function createRecommendation(temp, weather) {
 }
 
 async function getWeather(city) {
-
     try {
-
-        const url =
-            `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric&lang=pl`;
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric&lang=pl`;
 
         const response = await fetch(url);
 
-        console.log("STATUS:", response.status);
-        console.log("URL:", url);
-
         if (!response.ok) {
-
             const errorData = await response.json();
-
-            console.log("BŁĄD API:", errorData);
-
             return `❌ Błąd API: ${errorData.message}`;
         }
 
         const data = await response.json();
 
-        console.log("DANE:", data);
-
         const temperature = Math.round(data.main.temp);
         const description = data.weather[0].description;
         const weatherMain = data.weather[0].main.toLowerCase();
 
-        const recommendation =
-            createRecommendation(temperature, weatherMain);
+        const recommendation = createRecommendation(temperature, weatherMain);
 
         return `🌍 ${data.name}: ${temperature}°C, ${description}. ${recommendation}`;
-    }
-
-    catch (error) {
-
-        console.error("Błąd FETCH:", error);
-
+    } catch (error) {
         return "❌ Nie udało się połączyć z API.";
     }
 }
 
 function botResponse(userInput) {
-
     const text = userInput.toLowerCase();
 
     if (text.includes("deszcz") && text.includes("zimno")) {
@@ -119,9 +127,7 @@ function botResponse(userInput) {
 }
 
 async function sendMessage() {
-
     const input = document.getElementById("user-input");
-
     const userText = input.value.trim();
 
     if (userText === "") {
@@ -129,46 +135,28 @@ async function sendMessage() {
     }
 
     addMessage(userText, "user-message");
-
     input.value = "";
 
-    const typingMessage =
-        addMessage("Bot pisze...", "bot-message");
+    const typingMessage = addMessage("Bot pisze...", "bot-message", false);
 
     setTimeout(async () => {
-
         typingMessage.remove();
 
-        const localResponse =
-            botResponse(userText);
+        const localResponse = botResponse(userText);
 
         if (localResponse) {
-
-            addMessage(
-                localResponse,
-                "bot-message"
-            );
+            addMessage(localResponse, "bot-message");
+        } else {
+            const weatherResponse = await getWeather(userText);
+            addMessage(weatherResponse, "bot-message");
         }
-        else {
-
-            const weatherResponse =
-                await getWeather(userText);
-
-            addMessage(
-                weatherResponse,
-                "bot-message"
-            );
-        }
-
     }, 700);
 }
 
-document
-    .getElementById("user-input")
-    .addEventListener("keypress", function(event) {
+document.getElementById("user-input").addEventListener("keypress", function(event) {
+    if (event.key === "Enter") {
+        sendMessage();
+    }
+});
 
-        if (event.key === "Enter") {
-            sendMessage();
-        }
-
-    });
+loadMessages();
