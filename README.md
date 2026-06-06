@@ -1,4 +1,4 @@
-# Weather AI Assistant
+# Weather AI Assistant Oskar Kruszczyński 60582
 
 ## Opis projektu
 
