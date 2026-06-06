@@ -1,5 +1,5 @@
 # Weather AI Assistant Oskar Kruszczyński 60582
-
+#WB_IWB_inz_3_NS_NP_K
 ## Opis projektu
 
 Weather AI Assistant to inteligentny chatbot webowy stworzony z wykorzystaniem HTML5, CSS3 oraz JavaScript. Aplikacja umożliwia użytkownikowi uzyskanie rekomendacji dotyczących ubioru na podstawie aktualnych warunków pogodowych.
